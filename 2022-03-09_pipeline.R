@@ -4,12 +4,9 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(Seurat)
   library(stringr)
-  #library(cowplot)
-  #library(msigdbr)
-  #library(clusterProfiler)
 })
 
-lapply(c("openxlsx","dplyr","Seurat","HGNChelper"), library, character.only = T)
+
 
 set.seed(100101) #for UMAP
 
