@@ -10,7 +10,7 @@ suppressPackageStartupMessages({
 
 set.seed(100101) #for UMAP
 
-sample <- c("pmbc", "dataset2")
+sample <- c("pmbc", "other_dataset")
 
 
 for (file in sample) {
@@ -36,7 +36,7 @@ for (file in sample) {
   assign(file, seurat_obj)                                      
 }
 
-seurat_obj_list <- list(pmbc = pmbc, dataset2 = dataset2) #edit here to get all the seurat objects in environment
+seurat_obj_list <- list(pmbc = pmbc, other_dataset = other_dataset) #edit here to get all the seurat objects in environment
 
 
 ## Normalization
