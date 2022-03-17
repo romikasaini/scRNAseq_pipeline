@@ -74,6 +74,7 @@ for (i in 1:length(seurat_obj_list)){
 # Quick start -------------------------------------------------------------
 
 # load libraries and functions
+####install.packages("HGNChelper")
 lapply(c("dplyr","Seurat","HGNChelper"), library, character.only = T)
 source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R"); source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/sctype_score_.R")
 
@@ -122,8 +123,10 @@ for (i in 1:length(seurat_obj_list)){
 }
 
 #check the plot
-#DimPlot(seurat_obj_list[[2]], reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif') 
-
+plot_UMAP=paste("data/pmbc/UMAP.tiff",sep="")
+tiff(plot_UMAP,height=1500,width=2000,res=300)
+DimPlot(seurat_obj_list[[1]], reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif') 
+dev.off()
 
 #Raw counts and CPM data
 for (i in 1:length(seurat_obj_list)){
