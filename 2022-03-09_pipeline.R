@@ -50,7 +50,7 @@ for (i in 1:length(seurat_obj_list)){
 }
 
 #cell cycle scoring
-load("../scRNAseq_2021/cycle.rda")
+load("data/cycle.rda")
 for (i in 1:length(seurat_obj_list)){
   seurat_obj_list[[i]] <-  CellCycleScoring(seurat_obj_list[[i]], g2m.features=g2m_genes, s.features=s_genes)
 }
