@@ -148,3 +148,43 @@ CalcCPM<- function(seurat_obj, clustname="customclassif"){
   }
   return(CPM_genes)
 }
+        
+ ##following function performs clustering of the seurat object.                                                                         
+ Cluster=function(seurat_obj){
+  seurat_obj <- ScaleData(seurat_obj)
+  seurat_obj<- RunPCA(seurat_obj, npcs = 30, verbose = FALSE) # less than a minute
+  seurat_obj<- FindNeighbors(seurat_obj, dims = 1:10)
+  seurat_obj<- FindClusters(seurat_obj, resolution = 0.5)
+  seurat_obj<- RunUMAP(seurat_obj, reduction = "pca", dims = 1:15) #Define here the number of wanted PC's in dim= ! 
+  }
+
+##following function annotates the identified clusters(using sctype) and also genes a UMAP with cluster names 
+Sctype_anno=function(seurat_obj){
+  source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R"); source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/sctype_score_.R")
+  gs_list = gene_sets_prepare("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTypeDB_short.xlsx", "Immune system") # e.g. Immune system, Liver, Pancreas, Kidney, Eye, Brain
+  scRNAseqData = readRDS(gzcon(url('https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/exampleData.RDS'))); #load example scRNA-seq matrix
+  es.max = sctype_score(scRNAseqData = scRNAseqData, scaled = TRUE, gs = gs_list$gs_positive, gs2 = gs_list$gs_negative)
+  db_ = "https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTypeDB_full.xlsx";
+  tissue = "Immune system" # e.g. Immune system, Liver, Pancreas, Kidney, Eye, Brain
+  gs_list = gene_sets_prepare(db_, tissue)
+  es.max = sctype_score(scRNAseqData = seurat_obj[["RNA"]]@scale.data, scaled = TRUE, 
+                        gs = gs_list$gs_positive, gs2 = gs_list$gs_negative)
+  cL_resutls = do.call("rbind", lapply(unique(seurat_obj@meta.data$seurat_clusters), function(cl){
+    es.max.cl = sort(rowSums(es.max[ ,rownames(seurat_obj@meta.data[seurat_obj@meta.data$seurat_clusters==cl, ])]), decreasing = !0)
+    head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, ncells = sum(seurat_obj@meta.data$seurat_clusters==cl)), 10)
+  }))
+  sctype_scores = cL_resutls %>% group_by(cluster) %>% top_n(n = 1, wt = scores)  
+  
+  # set low-confident (low ScType score) clusters to "unknown"
+  sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) < sctype_scores$ncells/4] = "Unknown"
+  print(sctype_scores[,1:3])
+  
+  
+  # Overlay the identified cell types on UMAP plot
+  seurat_obj@meta.data$customclassif = ""
+  for(j in unique(sctype_scores$cluster)){
+    cl_type = sctype_scores[sctype_scores$cluster==j,]; 
+    seurat_obj@meta.data$customclassif[seurat_obj@meta.data$seurat_clusters == j] = as.character(cl_type$type[1])
+    DimPlot(seurat_obj_list[[1]], reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif')
+    }
+}
