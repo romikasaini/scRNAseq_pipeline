@@ -6,8 +6,13 @@ suppressPackageStartupMessages({
   library(stringr)
   library(graphics)
   library(pastecs)
+  library(HGNChelper)
 })
+source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R")
 load("cycle.rda")
+db_ = "./ScTypeDB_full.xlsx"
+tissue = "Immune system" # e.g. Immune system, Liver, Pancreas, Kidney, Eye, Brain
+gs_list = gene_sets_prepare(db_, tissue)
 set.seed(100101) #for UMAP
 # LOAD FUNCTIONS #
 ReadScData <- function(path){
@@ -113,6 +118,119 @@ SampleQC=function(seurat_obj){
   seurat_obj <- FindVariableFeatures(seurat_obj, selection.method = "vst", nfeatures = 2000)
   return(seurat_obj)
 }
+Cluster=function(seurat_obj, UMAP_dims=15, N_dims=10, res=0.5){
+  seurat_obj <- ScaleData(seurat_obj)
+  seurat_obj<- RunPCA(seurat_obj, npcs = 30, verbose = FALSE) # less than a minute
+  seurat_obj<- FindNeighbors(seurat_obj, dims = 1:N_dims)
+  seurat_obj<- FindClusters(seurat_obj, resolution = res)
+  seurat_obj<- RunUMAP(seurat_obj, reduction = "pca", dims = 1:UMAP_dims) #Define here the number of wanted PC's in dim= ! 
+}
+FindLog2FC=function(seurat_obj, as.df=F, min.pct=0.25, thres=0.25){
+  markers <- FindAllMarkers(seurat_obj, only.pos = TRUE, min.pct = min.pct, logfc.threshold = thres)
+  if (as.df){
+    xx=reshape2::dcast(markers, markers$gene~markers$cluster, value.var = "avg_log2FC")
+    rownames(xx)=xx[,1]
+    xx[,1]=NULL
+    return(list(markers, xx))
+  }
+  return(xx)
+}
+
+
+clustScore=function(Log2FCdata, gs=gs_list$gs_positive, gs2 = gs_list$gs_negative, gene_names_to_uppercase = !0, ...){
+  # marker sensitivity
+  marker_stat = sort(table(unlist(gs)), decreasing = T); 
+  marker_sensitivity = data.frame(score_marker_sensitivity = scales::rescale(as.numeric(marker_stat), to = c(0,1), from = c(length(gs),1)),
+                                  gene_ = names(marker_stat), stringsAsFactors = !1)
+  
+  # convert gene names to Uppercase
+  if(gene_names_to_uppercase){
+    rownames(Log2FCdata) = toupper(rownames(Log2FCdata));
+  }
+  
+  # subselect genes only found in data
+  names_gs_cp = names(gs); names_gs_2_cp = names(gs2);
+  gs = lapply(1:length(gs), function(d_){ 
+    GeneIndToKeep = rownames(Log2FCdata) %in% as.character(gs[[d_]]); rownames(Log2FCdata)[GeneIndToKeep]})
+  gs2 = lapply(1:length(gs2), function(d_){ 
+    GeneIndToKeep = rownames(Log2FCdata) %in% as.character(gs2[[d_]]); rownames(Log2FCdata)[GeneIndToKeep]})
+  names(gs) = names_gs_cp; names(gs2) = names_gs_2_cp;
+  cell_markers_genes_score = marker_sensitivity[marker_sensitivity$gene_ %in% unique(unlist(gs)),]
+  
+  # z-scale if not
+  #if(!scaled) Z <- t(scale(t(scRNAseqData))) else Z <- scRNAseqData
+  Z=Log2FCdata
+  # multiple by marker sensitivity
+  for(jj in 1:nrow(cell_markers_genes_score)){
+    Z[cell_markers_genes_score[jj,"gene_"], ] = (2**Z[cell_markers_genes_score[jj,"gene_"], ]) * cell_markers_genes_score[jj, "score_marker_sensitivity"]
+  }
+  
+  # subselect only with marker genes
+  Z = Z[unique(c(unlist(gs),unlist(gs2))), ]
+  
+  # combine scores
+  es = do.call("rbind", lapply(names(gs), function(gss_){ 
+    sapply(1:ncol(Z), function(j) {
+      gs_z = Z[gs[[gss_]], j]; gz_2 = Z[gs2[[gss_]], j] * -1
+      sum_t1 = (sum(gs_z, na.rm = T) / sqrt(length(gs_z[!is.na(gs_z)]))); sum_t2 = sum(gz_2, na.rm = T) / sqrt(length(gz_2[!is.na(gz_2)]));
+      if(is.na(sum_t2)){
+        sum_t2 = 0;
+      }
+      sum_t1 + sum_t2
+    })
+  })) 
+  
+  dimnames(es) = list(names(gs), colnames(Z))
+  es.max <- es[!apply(is.na(es) | es == "", 1, all),] # remove na rows
+  
+  es.max
+}
+choosCl=function(df){
+  res=NULL
+  for (i in 1:ncol(df)){
+    x=rownames(df)[df[,i]==max(df[,i], na.rm = T) & !is.na(df[,i])]
+    if (length(x)>1){
+      if (length(grep("B cells", x))==length(x)){
+        x="B cells"
+      }
+      if (length(grep("CD8", x))==length(x)){
+        x="CD8+ T cells"
+      }
+    if (length(grep("CD4", x))==length(x)){
+      x="CD4+ T cells"
+    
+    }
+      res=c(res, x[1])
+    }
+    else{
+      x=sort(decreasing = T, df[,i])
+      res=c(res, names(x)[1])
+    }
+
+  }
+  return(res)
+}
+
+ClustUMAP=function(seurat_obj, matrix, plot=F, save=F){
+  cl=choosCl(matrix)
+  names(cl)=levels(seurat_obj$seurat_clusters)
+  seurat_obj@meta.data$customclassif = ""
+  for(j in unique(seurat_obj$seurat_clusters)){
+    seurat_obj@meta.data$customclassif[seurat_obj@meta.data$seurat_clusters == j] = as.character(cl[as.character(j)])
+  }
+  if (plot){
+    if (save){
+      tiff("clustUMAP.tiff", width = 800, height = 600, res = 100)
+      plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif') + NoLegend())
+      dev.off()
+    }
+    plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif') + NoLegend())
+  }
+    
+  return(seurat_obj)
+}
+ 
+
 CalcRawCount <- function(seurat_obj, clustname="customclassif") {
   DefaultAssay(seurat_obj) <- "RNA"
   gene_list=rownames(seurat_obj)#get detected gene names 
@@ -148,43 +266,4 @@ CalcCPM<- function(seurat_obj, clustname="customclassif"){
   }
   return(CPM_genes)
 }
-        
- ##following function performs clustering of the seurat object.                                                                         
- Cluster=function(seurat_obj){
-  seurat_obj <- ScaleData(seurat_obj)
-  seurat_obj<- RunPCA(seurat_obj, npcs = 30, verbose = FALSE) # less than a minute
-  seurat_obj<- FindNeighbors(seurat_obj, dims = 1:10)
-  seurat_obj<- FindClusters(seurat_obj, resolution = 0.5)
-  seurat_obj<- RunUMAP(seurat_obj, reduction = "pca", dims = 1:15) #Define here the number of wanted PC's in dim= ! 
-  }
 
-##following function annotates the identified clusters(using sctype) and also genes a UMAP with cluster names 
-Sctype_anno=function(seurat_obj){
-  source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R"); source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/sctype_score_.R")
-  gs_list = gene_sets_prepare("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTypeDB_short.xlsx", "Immune system") # e.g. Immune system, Liver, Pancreas, Kidney, Eye, Brain
-  scRNAseqData = readRDS(gzcon(url('https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/exampleData.RDS'))); #load example scRNA-seq matrix
-  es.max = sctype_score(scRNAseqData = scRNAseqData, scaled = TRUE, gs = gs_list$gs_positive, gs2 = gs_list$gs_negative)
-  db_ = "https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTypeDB_full.xlsx";
-  tissue = "Immune system" # e.g. Immune system, Liver, Pancreas, Kidney, Eye, Brain
-  gs_list = gene_sets_prepare(db_, tissue)
-  es.max = sctype_score(scRNAseqData = seurat_obj[["RNA"]]@scale.data, scaled = TRUE, 
-                        gs = gs_list$gs_positive, gs2 = gs_list$gs_negative)
-  cL_resutls = do.call("rbind", lapply(unique(seurat_obj@meta.data$seurat_clusters), function(cl){
-    es.max.cl = sort(rowSums(es.max[ ,rownames(seurat_obj@meta.data[seurat_obj@meta.data$seurat_clusters==cl, ])]), decreasing = !0)
-    head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, ncells = sum(seurat_obj@meta.data$seurat_clusters==cl)), 10)
-  }))
-  sctype_scores = cL_resutls %>% group_by(cluster) %>% top_n(n = 1, wt = scores)  
-  
-  # set low-confident (low ScType score) clusters to "unknown"
-  sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) < sctype_scores$ncells/4] = "Unknown"
-  print(sctype_scores[,1:3])
-  
-  
-  # Overlay the identified cell types on UMAP plot
-  seurat_obj@meta.data$customclassif = ""
-  for(j in unique(sctype_scores$cluster)){
-    cl_type = sctype_scores[sctype_scores$cluster==j,]; 
-    seurat_obj@meta.data$customclassif[seurat_obj@meta.data$seurat_clusters == j] = as.character(cl_type$type[1])
-    DimPlot(seurat_obj_list[[1]], reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif')
-    }
-}
