@@ -7,13 +7,18 @@ suppressPackageStartupMessages({
   library(graphics)
   library(pastecs)
   library(HGNChelper)
+  library(SeuratData)
+  library(patchwork)
 })
+
 source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R")
-load("cycle.rda")
+load("data/cycle.rda")
 db_ = "./ScTypeDB_full.xlsx"
 tissue = "Immune system" # e.g. Immune system, Liver, Pancreas, Kidney, Eye, Brain
 gs_list = gene_sets_prepare(db_, tissue)
+InstallData("bmcite") #for multimodal reference mapping
 set.seed(100101) #for UMAP
+
 # LOAD FUNCTIONS #
 ReadScData <- function(path){
   seurat_data <-Read10X(data.dir = path)
@@ -211,6 +216,7 @@ choosCl=function(df){
   return(res)
 }
 
+#Sc-type function
 ClustUMAP=function(seurat_obj, matrix, plot=F, save=F){
   cl=choosCl(matrix)
   names(cl)=levels(seurat_obj$seurat_clusters)
@@ -229,8 +235,35 @@ ClustUMAP=function(seurat_obj, matrix, plot=F, save=F){
     
   return(seurat_obj)
 }
- 
 
+#multimodal reference mapping
+###########
+Multimodal_UMAP <- function(seurat_obj, plot=F, save=F){
+  bm <- LoadData(ds = "bmcite")
+  bm <- RunUMAP(bm, nn.name = "weighted.nn", reduction.name = "wnn.umap", 
+                reduction.key = "wnnUMAP_", return.model = TRUE)
+  bm <- ScaleData(bm, assay = 'RNA')
+  bm <- RunSPCA(bm, assay = 'RNA', graph = 'wsnn')
+  #Computing a cached neighbor index
+  bm <- FindNeighbors(object = bm, reduction = "spca", dims = 1:50, graph.name = "spca.annoy.neighbors", k.param = 50, cache.index = TRUE, return.neighbor = TRUE, l2.norm = TRUE )
+  
+  #seuraj_obj is clustered seurat object
+  anchors<- FindTransferAnchors( reference = bm, query = seurat_obj, k.filter = NA, reference.reduction = "spca", reference.neighbors = "spca.annoy.neighbors", dims = 1:50)
+  seuraj_obj <- MapQuery(anchorset = anchors, query = seurat_obj,reference = bm,  refdata = list(celltype = "celltype.l2", predicted_ADT = "ADT"),reference.reduction = "spca",reduction.model = "wnn.umap")
+  
+  if (plot){
+    if (save){
+      tiff("Multimodal_UMAP.tiff", width = 800, height = 600, res = 100)
+      plot(DimPlot(seuraj_obj, reduction = "ref.umap", group.by =  "predicted.celltype", label = TRUE, repel = TRUE, pt.size = 0.3, label.size = 5) + NoLegend())
+      dev.off()
+    }
+    plot(DimPlot(seuraj_obj, reduction = "ref.umap", group.by =  "predicted.celltype", label = TRUE, repel = TRUE, pt.size = 0.3, label.size = 5) + NoLegend())
+  }
+  return(seurat_obj)
+}
+
+
+#########
 CalcRawCount <- function(seurat_obj, clustname="customclassif") {
   DefaultAssay(seurat_obj) <- "RNA"
   gene_list=rownames(seurat_obj)#get detected gene names 
