@@ -9,7 +9,7 @@ SeuratSctype <- function(path){
   sample=ReadScData(path = path)
   sample=SampleQC(sample)
   z=GetSampleMetrics(sample, plot=T) #change here to save
-  sample=Cluster(sample)
+  sample=Cluster(sample, res=0.8)
   x=FindLog2FC(sample, as.df = T)
   es=clustScore(Log2FCdata = x[[2]])
   sample=ClustUMAP(sample, es, plot = T, save=T) #scType UMAP
@@ -26,7 +26,7 @@ SeuratMultimodal <- function(path){
   sample=ReadScData(path = path)
   sample=SampleQC(sample)
   z=GetSampleMetrics(sample, plot=T)
-  sample=Cluster(sample)
+  sample=Cluster(sample, res=0.8)
   x=FindLog2FC(sample, as.df = T)
   es=clustScore(Log2FCdata = x[[2]])
   sample <- Multimodal_UMAP(sample, plot = T, save=T) #multimodal reference mapping UMAP
