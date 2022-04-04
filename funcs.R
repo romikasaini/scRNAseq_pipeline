@@ -308,9 +308,9 @@ PreciseCluster=function(seurat_obj){
 CalcRawCount <- function(seurat_obj, clustname="customclassif") {
   DefaultAssay(seurat_obj) <- "RNA"
   gene_list=rownames(seurat_obj)#get detected gene names 
-  gene_list=gene_list[1:200]#small test set
+  #gene_list=gene_list[1:200]#small test set
   clusts=unique(as.character(seurat_obj@meta.data[[clustname]])) #get cluster names
-  clusts=clusts[1:3]
+  #clusts=clusts[1:3]
   #Raw counts 
   counts_genes=data.frame(Mean=NULL, SD=NULL, vars=NULL, clust=NULL)
   for (j in 1:length(clusts)){
@@ -325,9 +325,9 @@ CalcRawCount <- function(seurat_obj, clustname="customclassif") {
 CalcCPM<- function(seurat_obj, clustname="customclassif"){
   DefaultAssay(seurat_obj) <- "RNA"
   gene_list=rownames(seurat_obj)#get detected gene names 
-  gene_list=gene_list[1:200]#small test set
+  #gene_list=gene_list[1:200]#small test set
   clusts=unique(as.character(seurat_obj@meta.data[[clustname]])) #get cluster names
-  clusts=clusts[1:3]
+  #clusts=clusts[1:3]
   #Normalized counts (CPM) 
   CPM_genes=data.frame(Mean=NULL, SD=NULL, vars=NULL, clust=NULL) #create a list for each cluster
   for (j in 1:length(clusts)){
