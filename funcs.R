@@ -196,7 +196,13 @@ choosCl=function(df){
     x=rownames(df)[df[,i]==max(df[,i], na.rm = T) & !is.na(df[,i])]
     if (length(x)>1){
       if (length(grep("B cells", x))==length(x)){
-        x="B cells"
+        if (max(df[,i], na.rm = T)<10){
+          x="Malignant plasma cells"
+        }
+        else{
+          x="B cells"
+        }
+    
       }
       if (length(grep("CD8", x))==length(x)){
         x="CD8+ T cells"
@@ -213,9 +219,11 @@ choosCl=function(df){
     }
 
   }
+  res[grep("NKT", res)]="NK cells"
+  res[grep("CD8", res)]="CD8+ T cells"
+  res[grep("CD4", res)]="CD4+ T cells"
   return(res)
 }
-
 #Sc-type function
 ClustUMAP=function(seurat_obj, matrix, plot=F, save=F){
   cl=choosCl(matrix)
