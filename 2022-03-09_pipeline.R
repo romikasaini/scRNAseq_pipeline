@@ -15,9 +15,10 @@ SeuratSctype <- function(path){
   sample=ClustUMAP(sample, es, plot = T, save=T) #scType UMAP
   CPM=CalcCPM(sample, clustname = "customclassif")
   Raw=CalcRawCount(sample, clustname =  "customclassif")
+  return(list(Metrics=z, sample=sample, GE=list(CPM=CPM, Raw=Raw)))
 }
 
-SeuratSctype(path)
+y=SeuratSctype(path)
 
 
 #Seurat pipeline and annotation using multimodal reference mapping
@@ -31,5 +32,6 @@ SeuratMultimodal <- function(path){
   sample <- Multimodal_UMAP(sample, plot = T, save=T) #multimodal reference mapping UMAP
   CPM=CalcCPM(sample, clustname = "predicted.celltype")
   Raw=CalcRawCount(sample, clustname =  "predicted.celltype")
+  return(list(Metrics=z, sample=sample, GE=list(CPM=CPM, Raw=Raw)))
 }
-SeuratMultimodal(path)
+x=SeuratMultimodal(path)
