@@ -12,7 +12,7 @@ suppressPackageStartupMessages({
 })
 
 source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R")
-load("data/cycle.rda")
+load("cycle.rda")
 db_ = "./ScTypeDB_full.xlsx"
 tissue = "Immune system" # e.g. Immune system, Liver, Pancreas, Kidney, Eye, Brain
 gs_list = gene_sets_prepare(db_, tissue)
@@ -202,22 +202,22 @@ choosCl=function(df){
         else{
           x="B cells"
         }
-    
+        
       }
       if (length(grep("CD8", x))==length(x)){
         x="CD8+ T cells"
       }
-    if (length(grep("CD4", x))==length(x)){
-      x="CD4+ T cells"
-    
-    }
+      if (length(grep("CD4", x))==length(x)){
+        x="CD4+ T cells"
+        
+      }
       res=c(res, x[1])
     }
     else{
       x=sort(decreasing = T, df[,i])
       res=c(res, names(x)[1])
     }
-
+    
   }
   res[grep("NKT", res)]="NK cells"
   res[grep("CD8", res)]="CD8+ T cells"
@@ -225,12 +225,15 @@ choosCl=function(df){
   return(res)
 }
 #Sc-type function
-ClustUMAP=function(seurat_obj, matrix, plot=F, save=F){
+ClustUMAP=function(seurat_obj, matrix, plot=F, save=F, precise=F){
   cl=choosCl(matrix)
   names(cl)=levels(seurat_obj$seurat_clusters)
   seurat_obj@meta.data$customclassif = ""
   for(j in unique(seurat_obj$seurat_clusters)){
     seurat_obj@meta.data$customclassif[seurat_obj@meta.data$seurat_clusters == j] = as.character(cl[as.character(j)])
+  }
+  if (precise){
+    seurat_obj=PreciseCluster(seurat_obj)
   }
   if (plot){
     if (save){
@@ -240,13 +243,13 @@ ClustUMAP=function(seurat_obj, matrix, plot=F, save=F){
     }
     plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif') + NoLegend())
   }
-    
+  
   return(seurat_obj)
 }
 
 #multimodal reference mapping
 ###########
-Multimodal_UMAP <- function(seurat_obj, plot=F, save=F){
+PrepRef=function(){
   bm <- LoadData(ds = "bmcite")
   bm <- RunUMAP(bm, nn.name = "weighted.nn", reduction.name = "wnn.umap", 
                 reduction.key = "wnnUMAP_", return.model = TRUE)
@@ -254,22 +257,52 @@ Multimodal_UMAP <- function(seurat_obj, plot=F, save=F){
   bm <- RunSPCA(bm, assay = 'RNA', graph = 'wsnn')
   #Computing a cached neighbor index
   bm <- FindNeighbors(object = bm, reduction = "spca", dims = 1:50, graph.name = "spca.annoy.neighbors", k.param = 50, cache.index = TRUE, return.neighbor = TRUE, l2.norm = TRUE )
+  return(bm)
+}
+bm=PrepRef()
+
+Multimodal_UMAP <- function(seurat_obj, ref=bm, plot=F, save=F){
   
   #seuraj_obj is clustered seurat object
-  anchors<- FindTransferAnchors( reference = bm, query = seurat_obj, k.filter = NA, reference.reduction = "spca", reference.neighbors = "spca.annoy.neighbors", dims = 1:50)
-  seuraj_obj <- MapQuery(anchorset = anchors, query = seurat_obj,reference = bm,  refdata = list(celltype = "celltype.l2", predicted_ADT = "ADT"),reference.reduction = "spca",reduction.model = "wnn.umap")
+  anchors<- FindTransferAnchors(
+    reference = bm,
+    query = seurat_obj,
+    k.filter = NA,
+    reference.reduction = "spca", 
+    reference.neighbors = "spca.annoy.neighbors", 
+    dims = 1:50
+  )
+  Z <- MapQuery(
+    anchorset = anchors, 
+    query = seurat_obj,
+    reference = bm, 
+    refdata = list(
+      celltype = "celltype.l2", 
+      predicted_ADT = "ADT"),
+    reference.reduction = "spca",
+    reduction.model = "wnn.umap"
+  )
   
   if (plot){
     if (save){
       tiff("Multimodal_UMAP.tiff", width = 800, height = 600, res = 100)
-      plot(DimPlot(seuraj_obj, reduction = "ref.umap", group.by =  "predicted.celltype", label = TRUE, repel = TRUE, pt.size = 0.3, label.size = 5) + NoLegend())
+      plot(DimPlot(Z, reduction = "ref.umap", group.by =  "predicted.celltype", label = TRUE, repel = TRUE, pt.size = 0.3, label.size = 5) + NoLegend())
       dev.off()
     }
-    plot(DimPlot(seuraj_obj, reduction = "ref.umap", group.by =  "predicted.celltype", label = TRUE, repel = TRUE, pt.size = 0.3, label.size = 5) + NoLegend())
+    plot(DimPlot(Z, reduction = "ref.umap", group.by =  "predicted.celltype", label = TRUE, repel = TRUE, pt.size = 0.3, label.size = 5) + NoLegend())
   }
-  return(seurat_obj)
+  return(Z)
 }
 
+PreciseCluster=function(seurat_obj){
+  obj=seurat_obj
+  Idents(obj)="customclassif"
+  PC <- subset(obj, idents=grep("T cells|CD4|CD8|NK|DC|Dendritic|B cells",levels(obj), value = T))
+  PC=Multimodal_UMAP(PC, ref=bm)
+  m=FetchData(PC, "predicted.celltype")
+  obj$customclassif[rownames(m)]=m[,1]
+  return(obj)
+}
 
 #########
 CalcRawCount <- function(seurat_obj, clustname="customclassif") {
@@ -307,4 +340,3 @@ CalcCPM<- function(seurat_obj, clustname="customclassif"){
   }
   return(CPM_genes)
 }
-
