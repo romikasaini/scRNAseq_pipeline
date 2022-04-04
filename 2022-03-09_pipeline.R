@@ -2,7 +2,6 @@ source("./funcs.R")
 
 # Pipeline ####
 path="./Samples/FH_6385_2/filtered_feature_bc_matrix"
-path="../New_research_topics/single_cell_sequencing/multiple_myeloma_2021_originalfiles/Batch1-8_090120-120121/count_210215_A00464_0283_AHYVWLDRXX/FH_6385_2/filtered_feature_bc_matrix/"
 
 #Seurat pipeline and annotation using scType
 
