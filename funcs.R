@@ -338,3 +338,26 @@ CalcCPM<- function(seurat_obj, clustname="customclassif"){
   }
   return(CPM_genes)
 }
+
+
+SeuratSctype <- function(path, save=T, plot=T, top20=T, precise=T, res=0.8){
+  sample=ReadScData(path = path)
+  sample=SampleQC(sample)
+  z=GetSampleMetrics(sample, plot=plot, save=save) #change here to save
+  sample=Cluster(sample, res=res)
+  x=FindLog2FC(sample, as.df = T)
+ 
+  
+  es=clustScore(Log2FCdata = x[[2]])
+  sample=ClustUMAP(sample, es, plot = plot, save=save, precise=precise) # select precise = F for 1 step annotation and = T for 2-step annotation
+  CPM=CalcCPM(sample, clustname = "customclassif")
+  Raw=CalcRawCount(sample, clustname =  "customclassif")
+  if (top20){
+    x[[1]] %>% group_by(cluster) %>% top_n(n = 20, wt = avg_log2FC) -> top20
+    return(list(Metrics=z, sample=sample, GE=list(CPM=CPM, Raw=Raw), Log2FCperClust=top20))
+  }
+  return(list(Metrics=z, sample=sample, GE=list(CPM=CPM, Raw=Raw), Log2FCperClust=x[[1]]))
+}
+                                                                           
+                                                                           
+                                                                           
