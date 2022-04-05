@@ -13,9 +13,7 @@ suppressPackageStartupMessages({
 
 source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R")
 load("data/cycle.rda")
-db_ = "./ScTypeDB_full.xlsx"
-tissue = "Immune system" # e.g. Immune system, Liver, Pancreas, Kidney, Eye, Brain
-gs_list = gene_sets_prepare(db_, tissue)
+gs_list = gene_sets_prepare("https://raw.githubusercontent.com/romikasaini/scRNAseq_pipeline/main/ScTypeDB_full.xlsx", "Immune system")
 InstallData("bmcite") #for multimodal reference mapping
 set.seed(100101) #for UMAP
 
