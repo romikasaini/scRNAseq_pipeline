@@ -2,6 +2,7 @@ source("./funcs.R")
 
 # Pipeline ####
 path="./Samples/FH_6463_8/filtered_feature_bc_matrix"
+#path="../Immunocore/data/FHRB_743_6/filtered_feature_bc_matrix/"
 
 #Seurat pipeline and annotation using scType
 
