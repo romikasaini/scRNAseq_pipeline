@@ -12,7 +12,7 @@ suppressPackageStartupMessages({
 })
 
 source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R")
-load("cycle.rda")
+load("data/cycle.rda")
 db_ = "./ScTypeDB_full.xlsx"
 tissue = "Immune system" # e.g. Immune system, Liver, Pancreas, Kidney, Eye, Brain
 gs_list = gene_sets_prepare(db_, tissue)
@@ -238,10 +238,10 @@ ClustUMAP=function(seurat_obj, matrix, plot=F, save=F, precise=F){
   if (plot){
     if (save){
       tiff("clustUMAP.tiff", width = 800, height = 600, res = 100)
-      plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif') + NoLegend())
+      plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif'))
       dev.off()
     }
-    plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif') + NoLegend())
+    plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif'))
   }
   
   return(seurat_obj)
