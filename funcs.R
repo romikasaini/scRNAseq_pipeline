@@ -346,11 +346,12 @@ SeuratSctype <- function(path, save=T, plot=T, top20=T, precise=T, res=0.8){
   sample=SampleQC(sample)
   z=GetSampleMetrics(sample, plot=plot, save=save) #change here to save
   sample=Cluster(sample, res=res)
-  x=FindLog2FC(sample, as.df = T)
+  x=FindLog2FC(sample, as.df = T, idents="seurat_clusters")
  
   
   es=clustScore(Log2FCdata = x[[2]])
   sample=ClustUMAP(sample, es, plot = plot, save=save, precise=precise) # select precise = F for 1 step annotation and = T for 2-step annotation
+  x=FindLog2FC(sample, as.df = T, idents="customclassif")
   CPM=CalcCPM(sample, clustname = "customclassif")
   Raw=CalcRawCount(sample, clustname =  "customclassif")
   if (top20){
