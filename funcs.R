@@ -128,7 +128,8 @@ Cluster=function(seurat_obj, UMAP_dims=15, N_dims=10, res=0.5){
   seurat_obj<- FindClusters(seurat_obj, resolution = res)
   seurat_obj<- RunUMAP(seurat_obj, reduction = "pca", dims = 1:UMAP_dims) #Define here the number of wanted PC's in dim= ! 
 }
-FindLog2FC=function(seurat_obj, as.df=F, min.pct=0.25, thres=0.25){
+FindLog2FC=function(seurat_obj, as.df=F, min.pct=0.25, thres=0.25, idents){
+  Idents(seurat_obj)=idents
   markers <- FindAllMarkers(seurat_obj, only.pos = TRUE, min.pct = min.pct, logfc.threshold = thres)
   if (as.df){
     xx=reshape2::dcast(markers, markers$gene~markers$cluster, value.var = "avg_log2FC")
@@ -136,7 +137,7 @@ FindLog2FC=function(seurat_obj, as.df=F, min.pct=0.25, thres=0.25){
     xx[,1]=NULL
     return(list(markers, xx))
   }
-  return(xx)
+  return(markers)
 }
 
 
