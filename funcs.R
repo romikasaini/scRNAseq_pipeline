@@ -355,7 +355,7 @@ SeuratSctype <- function(path, save=T, plot=T, top20=T, precise=T, res=0.8){
   CPM=CalcCPM(sample, clustname = "customclassif")
   Raw=CalcRawCount(sample, clustname =  "customclassif")
   if (top20){
-    x[[1]] %>% group_by(cluster) %>% top_n(n = 20, wt = avg_log2FC) -> top20
+    x %>% group_by(cluster) %>% top_n(n = 20, wt = avg_log2FC) -> top20
     return(list(Metrics=z, sample=sample, GE=list(CPM=CPM, Raw=Raw), Log2FCperClust=top20))
   }
   return(list(Metrics=z, sample=sample, GE=list(CPM=CPM, Raw=Raw), Log2FCperClust=x[[1]]))
