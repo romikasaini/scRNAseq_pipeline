@@ -80,7 +80,7 @@ GetSampleMetrics <-function(seurat_obj, plot=F, save=F, plotname="stats"){
   
   if (plot){
     if (save){
-      tiff(paste0(plotname, ".tiff"), width = 960, height = 960, res=200)
+      png(paste0(plotname, ".png"), width = 960, height = 960, res=200)
       par(mfrow=c(3,1))
       PlotTP(rb)
       plot(density(mt), main="mt")
@@ -236,11 +236,11 @@ ClustUMAP=function(seurat_obj, matrix, plot=F, save=F, precise=F){
   }
   if (plot){
     if (save){
-      tiff("clustUMAP.tiff", width = 800, height = 600, res = 100)
-      plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif'))
+      png("clustUMAP.png", width = 800, height = 600, res = 100)
+      plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif')) + NoLegend()
       dev.off()
     }
-    plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif'))
+    plot(DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif')) + NoLegend()
   }
   
   return(seurat_obj)
