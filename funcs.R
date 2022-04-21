@@ -25,7 +25,7 @@ ReadScData <- function(path){
   seurat_obj$log10GenesPerUMI <- log10( seurat_obj$nFeature_RNA) / log10( seurat_obj$nCount_RNA)
   seurat_obj= PercentageFeatureSet(seurat_obj, "^RP[SL]", col.name = "percent_ribo")
   seurat_obj= PercentageFeatureSet(seurat_obj, "^HB[^(P)]", col.name = "percent_hb")
-  seurat_obj <-  CellCycleScoring(seurat_obj, g2m.features=g2m_genes, s.features=s_genes)
+  #seurat_obj <-  CellCycleScoring(seurat_obj, g2m.features=g2m_genes, s.features=s_genes)
   return(seurat_obj)
 }
 localMaxima <- function(x) {
@@ -355,7 +355,7 @@ SeuratSctype <- function(path, save=T, plot=T, top20=T, precise=T, res=0.8){
   CPM=CalcCPM(sample, clustname = "customclassif")
   Raw=CalcRawCount(sample, clustname =  "customclassif")
   if (top20){
-    x %>% group_by(cluster) %>% top_n(n = 20, wt = avg_log2FC) -> top20
+    x[[1]] %>% group_by(cluster) %>% top_n(n = 20, wt = avg_log2FC) -> top20
     return(list(Metrics=z, sample=sample, GE=list(CPM=CPM, Raw=Raw), Log2FCperClust=top20))
   }
   return(list(Metrics=z, sample=sample, GE=list(CPM=CPM, Raw=Raw), Log2FCperClust=x[[1]]))
