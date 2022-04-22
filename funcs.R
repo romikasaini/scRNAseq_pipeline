@@ -53,8 +53,15 @@ ReadScData <- function(path) {
     log10(seurat_obj$nFeature_RNA) / log10(seurat_obj$nCount_RNA)
   seurat_obj = PercentageFeatureSet(seurat_obj, "^RP[SL]", col.name = "percent_ribo")
   seurat_obj = PercentageFeatureSet(seurat_obj, "^HB[^(P)]", col.name = "percent_hb")
-  #seurat_obj <-  CellCycleScoring(seurat_obj, g2m.features=g2m_genes, s.features=s_genes)
-  return(seurat_obj)
+  seurat_obj = tryCatch(
+    expr = {
+    seurat_obj= CellCycleScoring(seurat_obj, g2m.features=g2m_genes, s.features=s_genes)}, 
+    error=function(x){
+  message("Cannot calculate CellCycleScoring")},
+    finally = {
+      return(seurat_obj)
+    })
+  
 }
 
 
