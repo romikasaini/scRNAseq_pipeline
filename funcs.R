@@ -1,5 +1,5 @@
 # This file has all the functions, libraries, supporting data needed to run the final script
-# No parameters need to be provided for this script unless one wants to run the script line by line.
+# No Parameters need to be provided for this script unless one wants to run the script line by line.
 
 #Read all the libraries
 suppressPackageStartupMessages({
@@ -39,7 +39,7 @@ set.seed(100101) #for UMAP
 
 # This function loads the dataset, initializes seurat object, adds metadata for quality control and plotting
 # percentage of mitochondrial genes, genes per UMI, Percentage of ribosomes and hemoglobin genes
-# parameters: path to sc-RNA data
+# Parameters: path to sc-RNA data
 
 ReadScData <- function(path) {
   seurat_data <- Read10X(data.dir = path)
@@ -59,7 +59,7 @@ ReadScData <- function(path) {
 
 
 # This function performs Quality control, normalization and feature selection for downstream data analysis
-# parameters: Seurat object produced by above steps or ReadScData function.
+# Parameters: Seurat object produced by above steps or ReadScData function.
 
 SampleQC = function(seurat_obj) {
   #Preprocessing/filtering
@@ -204,7 +204,7 @@ GetSampleMetrics <-
 
 
 # This function performs linear transformation and dimensional reduction of the data, constructs k-nearest neighbor graph, clusters the cells and produces UMAP.
-# params: seuraj object from above steps
+# Parameters: seuraj object from above steps
 # Arguments
 # N_dims: Number of dimesions to use for k-nearest neighbor graph, default is 10.
 # res: Resolution parameter to set the granularity of the clustering, default is 0.5.
@@ -225,7 +225,7 @@ Cluster = function(seurat_obj,
 }
 
 # This function runs differential expression (DE) between clusters
-# parameters: seurat_obj from above commands
+# Parameters: seurat_obj from above commands
 # as.df. Boolean, default is false. False produces DE results. True summarizes average log2FoldChange of each gene for each cluster and produces list of two dataframes: DE and average log2FoldChange
 FindLog2FC = function(seurat_obj,
                       as.df = F,
@@ -250,7 +250,7 @@ FindLog2FC = function(seurat_obj,
 }
 
 # sc-type: Function for scoring each cluster
-# parameters : average log2FoldChange data of each gene for each cluster, created in above command at as.df=T
+# Parameters : average log2FoldChange data of each gene for each cluster, created in above command at as.df=T
 
 clustScore = function(Log2FCdata,
                       gs = gs_list$gs_positive,
@@ -475,7 +475,7 @@ PreciseCluster = function(seurat_obj) {
 
 # Sc-type function to plot UMAP
 
-# parameters: seurat object created from above commands
+# Parameters: seurat object created from above commands
 # Arguments
 # plot: Plots the UMAP in Rstudio. Boolean, default is False.
 # save: Save the UMAP in the working directory. Boolean, default is False.
@@ -600,7 +600,7 @@ CalcCPM <- function(seurat_obj, clustname = "customclassif") {
 }
 
 # This is the final function that runs all of the above commands.
-# parameters: path to sc-RNA data
+# Parameters: path to sc-RNA data
 # Arguments
 # plot: Plots the UMAP in Rstudio. Boolean, default is True.
 # save: Save the UMAP in the working directory. Boolean, default is False.
