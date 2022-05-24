@@ -536,6 +536,7 @@ ClustUMAP = function(seurat_obj,
 
 
 
+
 # This function calculates of mean expression per cluster for Raw counts
 CalcRawCount <- function(seurat_obj, clustname = "customclassif") {
   DefaultAssay(seurat_obj) <- "RNA"
@@ -548,7 +549,8 @@ CalcRawCount <- function(seurat_obj, clustname = "customclassif") {
     Mean = NULL,
     SD = NULL,
     vars = NULL,
-    clust = NULL
+    clust = NULL,
+    gene=NULL
   )
   for (j in 1:length(clusts)) {
     x = FetchData(
@@ -565,8 +567,10 @@ CalcRawCount <- function(seurat_obj, clustname = "customclassif") {
         paste0(y, collapse = ";"))
     )
     x$clust = clusts[j]
+    x$gene=rownames(x)
     counts_genes = rbind(counts_genes, x)
   }
+  rownames(counts_genes)=NULL
   return(counts_genes)
 }
 
@@ -583,7 +587,8 @@ CalcCPM <- function(seurat_obj, clustname = "customclassif") {
     Mean = NULL,
     SD = NULL,
     vars = NULL,
-    clust = NULL
+    clust = NULL,
+    gene=NULL
   ) #create a list for each cluster
   for (j in 1:length(clusts)) {
     x = FetchData(
@@ -601,10 +606,13 @@ CalcCPM <- function(seurat_obj, clustname = "customclassif") {
         paste0(y, collapse = ";"))
     )
     x$clust = clusts[j]
+    x$gene=rownames(x)
     CPM_genes = rbind(CPM_genes, x)
   }
+  rownames(CPM_genes)=NULL
   return(CPM_genes)
 }
+
 
 # This is the final function that runs all of the above commands.
 # Parameters: path to sc-RNA data
