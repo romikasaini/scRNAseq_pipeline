@@ -517,8 +517,8 @@ ClustUMAP = function(seurat_obj,
           label = TRUE,
           repel = TRUE,
           group.by = 'customclassif'
-        )
-      ) + NoLegend()
+        ) + NoLegend()
+      ) 
       dev.off()
     }
     plot(
@@ -528,8 +528,8 @@ ClustUMAP = function(seurat_obj,
         label = TRUE,
         repel = TRUE,
         group.by = 'customclassif'
-      )
-    ) + NoLegend()
+      ) + NoLegend()
+    ) 
   }
   return(seurat_obj)
 }
