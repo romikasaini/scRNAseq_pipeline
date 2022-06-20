@@ -646,6 +646,8 @@ SeuratSctype <-
                        plot = plot,
                        save = save,
                        precise = precise)
+    n_cells=data.frame(Cells=c(table(sample$customclassif), Total=ncol(sample)),
+                       Share=c(table(sample$customclassif), Total=ncol(sample))/ncol(sample))
     x = FindLog2FC(sample, as.df = T, idents = "customclassif")
     CPM = CalcCPM(sample, clustname = "customclassif")
     Raw = CalcRawCount(sample, clustname =  "customclassif")
@@ -653,6 +655,7 @@ SeuratSctype <-
       x[[1]] %>% group_by(cluster) %>% top_n(n = 20, wt = avg_log2FC) -> top20
       return(list(
         Metrics = z,
+        n_cells=n_cells,
         sample = sample,
         GE = list(CPM = CPM, Raw = Raw),
         Log2FCperClust = top20
@@ -660,6 +663,7 @@ SeuratSctype <-
     }
     return(list(
       Metrics = z,
+      n_cells=n_cells,
       sample = sample,
       GE = list(CPM = CPM, Raw = Raw),
       Log2FCperClust = x[[1]]
