@@ -112,8 +112,10 @@ localMaxima <- function(x) {
   rle(y)$lengths
   y <- cumsum(rle(y)$lengths)
   y <- y[seq.int(1L, length(y), 2L)]
-  if (x[[1]] == x[[2]]) {
-    y <- y[-1]
+  if (length(x)>1){
+    if (x[[1]] == x[[2]]) {
+      y <- y[-1]
+    }  
   }
   y
 }
